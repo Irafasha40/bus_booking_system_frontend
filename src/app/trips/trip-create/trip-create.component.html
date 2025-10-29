@@ -1,0 +1,76 @@
+<div class="create-trip-container">
+  <h2>🆕 Create Trip</h2>
+
+  <form [formGroup]="tripForm" (ngSubmit)="onSubmit()">
+    <div class="form-group">
+      <label for="origin">Origin:</label>
+      <input id="origin" formControlName="origin" type="text" placeholder="Enter origin city" />
+      <div class="error-message" *ngIf="tripForm.get('origin')?.invalid && tripForm.get('origin')?.touched">
+        Origin is required
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="destination">Destination:</label>
+      <input id="destination" formControlName="destination" type="text" placeholder="Enter destination city" />
+      <div class="error-message" *ngIf="tripForm.get('destination')?.invalid && tripForm.get('destination')?.touched">
+        Destination is required
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="departureTime">Departure Time:</label>
+      <input id="departureTime" formControlName="departureTime" type="datetime-local" />
+      <div class="error-message" *ngIf="tripForm.get('departureTime')?.invalid && tripForm.get('departureTime')?.touched">
+        Departure time is required
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="arrivalTime">Arrival Time:</label>
+      <input id="arrivalTime" formControlName="arrivalTime" type="datetime-local" />
+      <div class="error-message" *ngIf="tripForm.get('arrivalTime')?.invalid && tripForm.get('arrivalTime')?.touched">
+        Arrival time is required
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="price">Price:</label>
+      <input id="price" formControlName="price" type="number" placeholder="Enter price" min="0" step="0.01" />
+      <div class="error-message" *ngIf="tripForm.get('price')?.invalid && tripForm.get('price')?.touched">
+        Valid price is required
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="totalSeats">Total Seats:</label>
+      <input id="totalSeats" formControlName="totalSeats" type="number" placeholder="Enter total seats" min="1" max="100" />
+      <div class="error-message" *ngIf="tripForm.get('totalSeats')?.invalid && tripForm.get('totalSeats')?.touched">
+        <span *ngIf="tripForm.get('totalSeats')?.errors?.['required']">Total seats is required</span>
+        <span *ngIf="tripForm.get('totalSeats')?.errors?.['min']">Total seats must be at least 1</span>
+        <span *ngIf="tripForm.get('totalSeats')?.errors?.['max']">Total seats cannot exceed 100</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="busNumber">Bus Number:</label>
+      <input id="busNumber" formControlName="busNumber" type="text" placeholder="Enter bus number (e.g., RAC001B)" />
+      <div class="error-message" *ngIf="tripForm.get('busNumber')?.invalid && tripForm.get('busNumber')?.touched">
+        <span *ngIf="tripForm.get('busNumber')?.errors?.['required']">Bus number is required</span>
+        <span *ngIf="tripForm.get('busNumber')?.errors?.['minlength']">Bus number must be at least 3 characters</span>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" [disabled]="tripForm.invalid || loading" class="submit-btn">
+        {{ loading ? 'Creating...' : 'Create Trip' }}
+      </button>
+      <button type="button" (click)="goBack()" class="cancel-btn">Cancel</button>
+    </div>
+  </form>
+
+  <div class="message-container">
+    <p class="success-message" *ngIf="success">{{ success }}</p>
+    <p class="error-message" *ngIf="error">{{ error }}</p>
+  </div>
+</div>

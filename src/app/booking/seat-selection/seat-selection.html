@@ -1,0 +1,101 @@
+<div class="seat-selection-container">
+  <div class="trip-info" *ngIf="trip">
+    <h2>🚌 Select Your Seats</h2>
+    <div class="trip-details">
+      <p><strong>{{ trip.origin }}</strong> → <strong>{{ trip.destination }}</strong></p>
+      <p>🕒 Departure: {{ trip.departureTime | date:'medium' }}</p>
+      <p>💰 Price: {{ trip.price | currency:'RWF':'code':'1.0-0' }}</p>
+      <p>🪑 Total Seats: {{ trip.totalSeats }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <p>Loading seats...</p>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <div *ngIf="success" class="success-message">
+    {{ success }}
+  </div>
+
+  <div class="bus-layout" *ngIf="!loading">
+    <div class="driver-area">
+      <div class="driver-seat">🚗</div>
+    </div>
+    
+    <div class="seats-container">
+      <div class="seat-row" *ngFor="let row of seatGrid">
+        <div class="seat-wrapper" *ngFor="let seatNumber of row">
+          <div 
+            [class]="getSeatClass(seatNumber)"
+            (click)="toggleSeat(seatNumber)"
+            [title]="'Seat ' + seatNumber"
+          >
+            {{ seatNumber }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="aisle">AISLE</div>
+  </div>
+
+  <div class="seat-legend">
+    <div class="legend-item">
+      <div class="seat available">1</div>
+      <span>Available</span>
+    </div>
+    <div class="legend-item">
+      <div class="seat selected">2</div>
+      <span>Selected</span>
+    </div>
+    <div class="legend-item">
+      <div class="seat booked">3</div>
+      <span>Booked</span>
+    </div>
+  </div>
+
+  <div class="booking-actions" *ngIf="selectedSeats.length > 0">
+    <p>Selected Seats: <strong>{{ selectedSeats.join(', ') }}</strong></p>
+
+    <div class="passenger-form" *ngFor="let passenger of passengerDetails; let i = index">
+      <div class="passenger-row">
+        <div class="field">
+          <label>Seat</label>
+          <input type="text" [value]="passenger.seatNumber" disabled />
+        </div>
+        <div class="field">
+          <label>Name</label>
+          <input type="text" [(ngModel)]="passengerDetails[i].name" placeholder="Passenger name" />
+        </div>
+        <div class="field">
+          <label>Age</label>
+          <input type="number" [(ngModel)]="passengerDetails[i].age" min="0" />
+        </div>
+        <div class="field">
+          <label>Gender</label>
+          <select [(ngModel)]="passengerDetails[i].gender">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <button 
+      class="book-button" 
+      (click)="bookSeats()" 
+      [disabled]="loading"
+    >
+      {{ loading ? 'Booking...' : 'Confirm Booking' }}
+    </button>
+  </div>
+
+  <div class="back-button">
+    <button (click)="router.navigate(['/dashboard'])">← Back to Dashboard</button>
+  </div>
+</div>

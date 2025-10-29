@@ -1,0 +1,95 @@
+<div class="forgot-password-container">
+  <div class="forgot-password-card">
+    <div class="header">
+      <button class="home-btn" (click)="goToHome()">🏠</button>
+      <h2>🔑 Forgot Password</h2>
+      <p *ngIf="!emailSent">Enter your email to receive an OTP code</p>
+      <p *ngIf="emailSent">Enter the OTP code sent to {{ emailAddress }} and your new password</p>
+    </div>
+
+    <form [formGroup]="resetForm" (ngSubmit)="onSubmit()">
+      <!-- Step 1: Email Input -->
+      <div class="form-group" *ngIf="!emailSent">
+        <label for="email">Email Address</label>
+        <input 
+          id="email"
+          type="email" 
+          formControlName="email" 
+          placeholder="Enter your registered email"
+        />
+        <div class="error-message" *ngIf="resetForm.get('email')?.invalid && resetForm.get('email')?.touched">
+          <span *ngIf="resetForm.get('email')?.errors?.['required']">Email is required</span>
+          <span *ngIf="resetForm.get('email')?.errors?.['email']">Please enter a valid email</span>
+        </div>
+      </div>
+
+      <!-- Step 2: OTP and New Password Fields -->
+      <div *ngIf="emailSent">
+        <div class="form-group">
+          <label for="otp">OTP Code</label>
+          <input 
+            id="otp"
+            type="text" 
+            formControlName="otp" 
+            placeholder="Enter the OTP code from your email"
+            maxlength="6"
+          />
+          <div class="error-message" *ngIf="resetForm.get('otp')?.invalid && resetForm.get('otp')?.touched">
+            <span *ngIf="resetForm.get('otp')?.errors?.['required']">OTP code is required</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="newPassword">New Password</label>
+          <input 
+            id="newPassword"
+            type="password" 
+            formControlName="newPassword" 
+            placeholder="Enter your new password"
+          />
+          <div class="error-message" *ngIf="resetForm.get('newPassword')?.invalid && resetForm.get('newPassword')?.touched">
+            <span *ngIf="resetForm.get('newPassword')?.errors?.['required']">New password is required</span>
+            <span *ngIf="resetForm.get('newPassword')?.errors?.['minlength']">Password must be at least 6 characters</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="confirmPassword">Confirm New Password</label>
+          <input 
+            id="confirmPassword"
+            type="password" 
+            formControlName="confirmPassword" 
+            placeholder="Confirm your new password"
+          />
+          <div class="error-message" *ngIf="resetForm.get('confirmPassword')?.invalid && resetForm.get('confirmPassword')?.touched">
+            <span *ngIf="resetForm.get('confirmPassword')?.errors?.['required']">Please confirm your new password</span>
+            <span *ngIf="resetForm.get('confirmPassword')?.errors?.['passwordMismatch']">Passwords do not match</span>
+          </div>
+        </div>
+      </div>
+
+      <button 
+        type="submit" 
+        class="reset-btn" 
+        [disabled]="(emailSent ? resetForm.invalid : resetForm.get('email')?.invalid) || loading"
+      >
+        <span *ngIf="!emailSent">{{ loading ? 'Sending...' : 'Send OTP' }}</span>
+        <span *ngIf="emailSent">{{ loading ? 'Resetting...' : 'Reset Password' }}</span>
+      </button>
+    </form>
+
+    <div class="message-container">
+      <p class="success-message" *ngIf="message">{{ message }}</p>
+      <p class="error-message" *ngIf="error">{{ error }}</p>
+    </div>
+
+    <div class="links">
+      <p *ngIf="!emailSent"><a (click)="goToLogin()" class="link">Back to Login</a></p>
+      <p *ngIf="emailSent">
+        <a (click)="resetFormData()" class="link">Use different email</a> | 
+        <a (click)="goToLogin()" class="link">Back to Login</a>
+      </p>
+      <p>Don't have an account? <a (click)="goToSignup()" class="link">Sign up here</a></p>
+    </div>
+  </div>
+</div>

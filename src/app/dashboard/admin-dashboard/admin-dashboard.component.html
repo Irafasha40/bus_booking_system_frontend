@@ -1,0 +1,309 @@
+<div class="admin-dashboard">
+  <div class="dashboard-header">
+    <div class="welcome-section">
+      <h1>👨‍💼 Admin Dashboard</h1>
+      <p>Welcome back, {{ user?.username }}! Manage your bus booking system</p>
+    </div>
+    <div class="admin-actions">
+      <button class="create-trip-btn" (click)="createNewTrip()">🆕 Create Trip</button>
+      <button class="logout-btn" (click)="logout()">🚪 Logout</button>
+    </div>
+  </div>
+
+  <div class="dashboard-content">
+    <!-- Statistics Section -->
+    <div class="stats-section">
+      <div class="stat-card">
+        <div class="stat-icon">🚌</div>
+        <div class="stat-info">
+          <h3>Total Trips</h3>
+          <p>{{ getTotalTripsCount() }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-info">
+          <h3>Active Trips</h3>
+          <p>{{ getFutureTripsCount() }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">❌</div>
+        <div class="stat-info">
+          <h3>Cancelled Trips</h3>
+          <p>{{ getCancelledTripsCount() }}</p>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🚀</div>
+        <div class="stat-info">
+          <h3>Departed Trips</h3>
+          <p>{{ departedTrips.length }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trip Management Section -->
+    <div class="section">
+      <div class="section-header">
+        <h2>📋 Trip Management</h2>
+        <div class="search-bar">
+          <input type="text" placeholder="Search origin" [(ngModel)]="searchOrigin" (ngModelChange)="onSearchChange()" />
+          <input type="text" placeholder="Search destination" [(ngModel)]="searchDestination" (ngModelChange)="onSearchChange()" />
+        </div>
+        <button class="refresh-btn" (click)="loadAllTrips()">🔄 Refresh</button>
+      </div>
+
+      <div *ngIf="loading" class="loading">
+        <p>Loading trips...</p>
+      </div>
+
+      <div *ngIf="error" class="error-message">
+        {{ error }}
+      </div>
+
+      <div *ngIf="success" class="success-message">
+        {{ success }}
+      </div>
+
+      <div *ngIf="!loading && trips.length === 0" class="no-trips">
+        <p>No trips found. Create your first trip!</p>
+      </div>
+
+      <div *ngIf="!loading && filteredTrips.length > 0" class="trips-table">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Route</th>
+              <th>Departure</th>
+              <th>Arrival</th>
+              <th>Available Seats</th>
+              <th>Total Seats</th>
+              <th>Price</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let trip of paginatedTrips" [class.cancelled-trip]="trip.status === 'CANCELLED'">
+              <td>{{ getTripId(trip) }}</td>
+              <td>
+                <div class="route-info">
+                  <span class="origin">{{ trip.origin }}</span>
+                  <span class="arrow">→</span>
+                  <span class="destination">{{ trip.destination }}</span>
+                </div>
+              </td>
+              <td>{{ formatDate(trip.departureTime) }}</td>
+              <td>{{ formatDate(trip.arrivalTime) }}</td>
+              <td>{{ trip.availableSeats !== undefined ? trip.availableSeats : 'N/A' }}</td>
+              <td>{{ trip.totalSeats }}</td>
+              <td>{{ trip.price | currency:'RWF':'code' }}</td>
+              <td>
+                <span [class]="'status ' + getStatusClass(trip.status)">
+                  {{ trip.status }}
+                </span>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  
+                  <button 
+                    type="button"
+                    class="delete-btn"
+                    (click)="deleteTrip(getTripId(trip)!)"
+                    [disabled]="!getTripId(trip)"
+                    title="Delete Trip"
+                  >
+                    🗑️
+                  </button>
+                  <button 
+                    type="button"
+                    class="book-btn"
+                    (click)="bookTrip(getTripId(trip) || trip.tripId)"
+                    [disabled]="(trip.status?.toUpperCase() !== 'ACTIVE') || (trip.availableSeats === 0)"
+                    title="Book Seats"
+                  >
+                    🪑 Book
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Pagination for trips -->
+        <div class="pagination">
+          <div class="pagination-controls">
+            <div class="pagination-info">
+              <span>Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ getMin(currentPage * itemsPerPage, filteredTrips.length) }} of {{ filteredTrips.length }} trips</span>
+            </div>
+            
+            <div class="pagination-controls">
+              <div class="items-per-page">
+                <label>Show:</label>
+                <select [(ngModel)]="itemsPerPage" (change)="onItemsPerPageChange()" class="items-select">
+                  <option *ngFor="let option of [5, 10, 20]" [value]="option">{{ option }}</option>
+                </select>
+                <span>per page</span>
+              </div>
+              
+              <div class="page-navigation">
+                <button 
+                  [disabled]="currentPage === 1"
+                  (click)="goToPage(currentPage - 1)"
+                  class="page-btn"
+                >
+                  ← Previous
+                </button>
+                
+                <div class="page-numbers">
+                  <button 
+                    *ngFor="let page of getPageNumbers()"
+                    [class.active]="page === currentPage"
+                    (click)="goToPage(page)"
+                    class="page-btn"
+                  >
+                    {{ page }}
+                  </button>
+                </div>
+                
+                <button 
+                  [disabled]="currentPage === totalPages"
+                  (click)="goToPage(currentPage + 1)"
+                  class="page-btn"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          </div>
+      </div>
+    </div>
+
+    <!-- Departed Trips Section -->
+    <div class="section">
+      <div class="section-header">
+        <h2>🚀 Departed Trips</h2>
+        <button class="refresh-btn" (click)="loadDepartedTrips()">🔄 Refresh</button>
+      </div>
+
+      <div *ngIf="departedTrips.length === 0" class="no-trips">
+        <p>No departed trips found.</p>
+      </div>
+
+      <div *ngIf="departedTrips.length > 0" class="trips-table">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Route</th>
+              <th>Departure</th>
+              <th>Arrival</th>
+              <th>Available Seats</th>
+              <th>Total Seats</th>
+              <th>Price</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let trip of paginatedDepartedTrips">
+              <td>{{ getTripId(trip) }}</td>
+              <td>
+                <div class="route-info">
+                  <span class="origin">{{ trip.origin }}</span>
+                  <span class="arrow">→</span>
+                  <span class="destination">{{ trip.destination }}</span>
+                </div>
+              </td>
+              <td>{{ formatDate(trip.departureTime) }}</td>
+              <td>{{ formatDate(trip.arrivalTime) }}</td>
+              <td>{{ trip.availableSeats !== undefined ? trip.availableSeats : 'N/A' }}</td>
+              <td>{{ trip.totalSeats }}</td>
+              <td>{{ trip.price | currency:'RWF':'code' }}</td>
+              <td>
+                <span class="status status-departed">
+                  DEPARTED
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Pagination for departed trips -->
+        <div class="pagination">
+          <div class="pagination-controls">
+            <div class="pagination-info">
+              <span>Showing {{ (currentPageDeparted - 1) * itemsPerPageDeparted + 1 }} to {{ getMin(currentPageDeparted * itemsPerPageDeparted, departedTrips.length) }} of {{ departedTrips.length }} departed trips</span>
+            </div>
+            
+            <div class="pagination-controls">
+              <div class="items-per-page">
+                <label>Show:</label>
+                <select [(ngModel)]="itemsPerPageDeparted" (change)="onItemsPerPageDepartedChange()" class="items-select">
+                  <option *ngFor="let option of [5, 10, 20]" [value]="option">{{ option }}</option>
+                </select>
+                <span>per page</span>
+              </div>
+              
+              <div class="page-navigation">
+                <button 
+                  [disabled]="currentPageDeparted === 1"
+                  (click)="goToPageDeparted(currentPageDeparted - 1)"
+                  class="page-btn"
+                >
+                  ← Previous
+                </button>
+                
+                <div class="page-numbers">
+                  <button 
+                    *ngFor="let page of getPageNumbersDeparted()"
+                    [class.active]="page === currentPageDeparted"
+                    (click)="goToPageDeparted(page)"
+                    class="page-btn"
+                  >
+                    {{ page }}
+                  </button>
+                </div>
+                
+                <button 
+                  [disabled]="currentPageDeparted === totalPagesDeparted"
+                  (click)="goToPageDeparted(currentPageDeparted + 1)"
+                  class="page-btn"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="section">
+      <div class="section-header">
+        <h2>⚡ Quick Actions</h2>
+      </div>
+      
+      <div class="quick-actions">
+        <button class="action-btn" (click)="createNewTrip()">
+          <span class="action-icon">🆕</span>
+          <span>Create New Trip</span>
+        </button>
+        <button class="action-btn" (click)="loadAllTrips()">
+          <span class="action-icon">🔄</span>
+          <span>Refresh Trips</span>
+        </button>
+        <button class="action-btn" (click)="router.navigate(['/booking-history'])">
+          <span class="action-icon">📋</span>
+          <span>View All Bookings</span>
+        </button>
+        <button class="action-btn" (click)="router.navigate(['/dashboard'])">
+          <span class="action-icon">👥</span>
+          <span>View User Dashboard</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,143 @@
+<div class="booking-history-container">
+  <div class="header">
+    <button class="back-button" (click)="goBack()">← Back</button>
+    <h2>{{ isAdminRole ? '📋 All Bookings' : '📋 My Booking History' }}</h2>
+    <p>{{ isAdminRole ? 'View and manage all system bookings' : 'View and manage your bus bookings' }}</p>
+  </div>
+
+  <!-- Search and Filter Section -->
+  <div class="search-section">
+    <div class="search-controls">
+      <div class="search-input-group">
+        <input 
+          type="text" 
+          placeholder="Search bookings..." 
+          [(ngModel)]="searchTerm"
+          (input)="onSearch()"
+          class="search-input"
+        />
+        <select [(ngModel)]="searchField" (change)="onSearch()" class="search-field-select">
+          <option value="all">All Fields</option>
+          <option value="passenger">Passenger Name</option>
+          <option value="id">Booking ID</option>
+          <option value="destination">Destination</option>
+          <option value="origin">Origin</option>
+          <option value="status">Status</option>
+          <option value="date">Date</option>
+          <option value="seats">Seat Numbers</option>
+          <option value="price">Price</option>
+        </select>
+      </div>
+      <button class="clear-search-btn" (click)="clearSearch()" *ngIf="searchTerm">
+        🗑️ Clear
+      </button>
+    </div>
+    <div class="search-info" *ngIf="searchTerm">
+      <p>Found {{ filteredBookings.length }} booking(s) matching "{{ searchTerm }}" in {{ searchField === 'all' ? 'all fields' : searchField }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="loading">
+    <p>Loading your bookings...</p>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    {{ error }}
+  </div>
+
+  <div *ngIf="success" class="success-message">
+    {{ success }}
+  </div>
+
+  <div *ngIf="!loading && filteredBookings.length === 0" class="no-bookings">
+    <div class="empty-state">
+      <h3>🚌 No Bookings Found</h3>
+      <p *ngIf="searchTerm">No bookings match your search criteria. Try adjusting your search terms.</p>
+      <p *ngIf="!searchTerm">{{ isAdminRole ? 'There are no bookings in the system yet.' : "You haven't made any bookings yet. Start by exploring available trips!" }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && filteredBookings.length > 0" class="bookings-list">
+    <div *ngFor="let booking of filteredBookings" class="booking-card">
+      <div class="booking-header">
+        <div class="booking-id">
+          <strong>Booking #{{ booking.bookingId || booking.id }}</strong>
+        </div>
+        <div [class]="'status ' + getStatusClass(booking.status)">
+          {{ booking.status }}
+        </div>
+      </div>
+
+      <div class="booking-details" *ngIf="booking.trip">
+        <div class="trip-info">
+          <div class="route">
+            <span class="origin">{{ booking.trip.origin }}</span>
+            <span class="arrow">→</span>
+            <span class="destination">{{ booking.trip.destination }}</span>
+          </div>
+          
+          <div class="trip-meta">
+            <div class="meta-item">
+              <span class="icon">🕒</span>
+              <span>Departure: {{ booking.trip.departureTime | date:'medium' }}</span>
+            </div>
+            <div class="meta-item">
+              <span class="icon">⏰</span>
+              <span>Arrival: {{ booking.trip.arrivalTime | date:'medium' }}</span>
+            </div>
+            <div class="meta-item">
+              <span class="icon">🚌</span>
+              <span>Bus: {{ booking.trip.busNumber }}</span>
+            </div>
+            <div class="meta-item">
+              <span class="icon">💺</span>
+              <span>
+                Seats: 
+                <ng-container *ngIf="booking.seatNumbers?.length; else singleSeat">
+                  {{ (booking.seatNumbers || []).join(', ') }}
+                </ng-container>
+                <ng-template #singleSeat>{{ booking.seatNumber }}</ng-template>
+              </span>
+            </div>
+            <div class="meta-item" *ngIf="booking.totalPrice">
+              <span class="icon">💰</span>
+              <span>Total: {{ booking.totalPrice | currency:'RWF':'code':'1.0-0' }}</span>
+            </div>
+            <div class="meta-item" *ngIf="booking.bookingDate">
+              <span class="icon">📅</span>
+              <span>Booked: {{ formatDate(booking.bookingDate) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="passenger-details" *ngIf="booking.passengerDetails?.length">
+          <h4>Passengers</h4>
+          <ul>
+            <li *ngFor="let p of booking.passengerDetails">
+              {{ p.name }} ({{ p.gender }}, {{ p.age }}y) - Seat {{ p.seatNumber }}
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="booking-actions">
+        <button 
+          *ngIf="canCancelBooking(booking)"
+          class="cancel-button"
+          (click)="cancelBooking((booking.bookingId || booking.id)!)"
+        >
+          ❌ Cancel Booking
+        </button>
+        <span *ngIf="!canCancelBooking(booking)" class="cancelled-text">
+          This booking has been cancelled
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <div class="refresh-section">
+    <button class="refresh-button" (click)="loadBookings()">
+      🔄 Refresh Bookings
+    </button>
+  </div>
+</div>

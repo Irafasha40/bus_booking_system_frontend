@@ -1,0 +1,272 @@
+<div class="user-dashboard">
+  <div class="dashboard-header">
+    <div class="welcome-section">
+      <h1>🚌 Welcome, {{ user?.username }}!</h1>
+      <p>Book your next journey with ease</p>
+    </div>
+    <div class="user-actions">
+      <button class="logout-btn" (click)="logout()">🚪 Logout</button>
+    </div>
+  </div>
+
+  <div class="dashboard-content">
+    <!-- Available Trips Section -->
+    <div class="section">
+      <div class="section-header">
+        <h2>📅 Available Trips</h2>
+        <p>Browse and book your preferred route</p>
+        <div class="search-bar">
+          <input type="text" placeholder="Search origin" [(ngModel)]="searchOrigin" (ngModelChange)="onSearchChange()" />
+          <input type="text" placeholder="Search destination" [(ngModel)]="searchDestination" (ngModelChange)="onSearchChange()" />
+        </div>
+        <div class="section-actions">
+          <button class="view-all-btn" (click)="viewTrips()">View All Trips</button>
+          <button class="refresh-btn" (click)="loadTrips()">Refresh</button>
+        </div>
+      </div>
+
+      <div *ngIf="loading" class="loading">
+        <p>Loading available trips...</p>
+      </div>
+
+      <div *ngIf="error" class="error-message">
+        {{ error }}
+      </div>
+
+      <div *ngIf="!loading && trips.length === 0" class="no-trips">
+        <p>No trips available at the moment. Please check back later!</p>
+      </div>
+
+      <div *ngIf="!loading && trips.length > 0 && filteredTrips.length === 0" class="no-trips">
+        <p>No trips match your search criteria. Try adjusting your search terms.</p>
+      </div>
+
+      <!-- View Toggle -->
+      <div class="view-toggle" *ngIf="filteredTrips.length > 0">
+        <button 
+          [class.active]="viewMode === 'cards'" 
+          (click)="setViewMode('cards')" 
+          class="toggle-btn"
+        >
+          🎴 Cards
+        </button>
+        <button 
+          [class.active]="viewMode === 'table'" 
+          (click)="setViewMode('table')" 
+          class="toggle-btn"
+        >
+          📊 Table
+        </button>
+      </div>
+
+      <!-- Cards View -->
+      <div *ngIf="viewMode === 'cards' && !loading && filteredTrips.length > 0" class="trips-grid">
+        <div *ngFor="let trip of paginatedTrips" class="trip-card">
+          <div class="trip-header">
+            <div class="route">
+              <span class="origin">{{ trip.origin }}</span>
+              <span class="arrow">→</span>
+              <span class="destination">{{ trip.destination }}</span>
+            </div>
+            <div class="price">{{ trip.price | currency:'RWF':'code':'1.0-0' }}</div>
+          </div>
+
+          <div class="trip-details">
+            <div class="detail-item">
+              <span class="icon">🕒</span>
+              <span>Departure: {{ trip.departureTime | date:'medium' }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="icon">⏰</span>
+              <span>Arrival: {{ trip.arrivalTime | date:'medium' }}</span>
+            </div>
+            <div class="detail-item" *ngIf="trip.availableSeats !== undefined">
+              <span class="icon">💺</span>
+              <span>{{ trip.availableSeats }} seats available</span>
+            </div>
+          </div>
+
+          <div class="trip-actions">
+            <button 
+              class="book-btn"
+              (click)="bookTrip(trip.tripId || trip.id!)"
+              [disabled]="trip.availableSeats === 0"
+            >
+              {{ trip.availableSeats === 0 ? 'No Seats' : 'Book Now' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table View -->
+      <div *ngIf="viewMode === 'table' && !loading && filteredTrips.length > 0" class="trips-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Route</th>
+              <th>Departure</th>
+              <th>Arrival</th>
+              <th>Available Seats</th>
+              <th>Price</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let trip of paginatedTrips">
+              <td>
+                <div class="route-info">
+                  <span class="origin">{{ trip.origin }}</span>
+                  <span class="arrow">→</span>
+                  <span class="destination">{{ trip.destination }}</span>
+                </div>
+              </td>
+              <td>{{ formatDate(trip.departureTime) }}</td>
+              <td>{{ formatDate(trip.arrivalTime) }}</td>
+              <td>{{ trip.availableSeats !== undefined ? trip.availableSeats : 'N/A' }}</td>
+              <td>{{ trip.price | currency:'RWF':'code' }}</td>
+              <td>
+                <button 
+                  class="book-btn"
+                  (click)="bookTrip(trip.tripId || trip.id!)"
+                  [disabled]="trip.availableSeats === 0"
+                >
+                  {{ trip.availableSeats === 0 ? 'No Seats' : 'Book Now' }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Pagination for table view -->
+        <div *ngIf="totalPages > 1" class="pagination">
+          <div class="pagination-info">
+            <span>Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ getMin(currentPage * itemsPerPage, filteredTrips.length) }} of {{ filteredTrips.length }} trips</span>
+          </div>
+          
+          <div class="pagination-controls">
+            <div class="items-per-page">
+              <label>Show:</label>
+              <select [(ngModel)]="itemsPerPage" (change)="onItemsPerPageChange()" class="items-select">
+                <option *ngFor="let option of [5, 10, 20]" [value]="option">{{ option }}</option>
+              </select>
+              <span>per page</span>
+            </div>
+            
+            <div class="page-navigation">
+              <button 
+                [disabled]="currentPage === 1"
+                (click)="goToPage(currentPage - 1)"
+                class="page-btn"
+              >
+                ← Previous
+              </button>
+              
+              <div class="page-numbers">
+                <button 
+                  *ngFor="let page of getPageNumbers()"
+                  [class.active]="page === currentPage"
+                  (click)="goToPage(page)"
+                  class="page-btn"
+                >
+                  {{ page }}
+                </button>
+              </div>
+              
+              <button 
+                [disabled]="currentPage === totalPages"
+                (click)="goToPage(currentPage + 1)"
+                class="page-btn"
+              >
+                Next →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin: All Bookings Section -->
+    <div class="section" *ngIf="isAdminRole">
+      <div class="section-header">
+        <h2>📋 All Bookings</h2>
+        <button class="view-all-btn" (click)="viewAllBookings()">Open Full View</button>
+      </div>
+
+      <div *ngIf="allBookings.length === 0" class="no-bookings">
+        <p>No bookings found.</p>
+      </div>
+
+      <div *ngIf="allBookings.length > 0" class="bookings-list">
+        <div *ngFor="let booking of allBookings" class="booking-item">
+          <div class="booking-info">
+            <div class="booking-route" *ngIf="booking.trip">
+              {{ booking.trip.origin }} → {{ booking.trip.destination }}
+            </div>
+            <div class="booking-meta">
+              <span class="seat">
+                Seats: 
+                <ng-container *ngIf="booking.seatNumbers?.length; else oneSeat">
+                  {{ (booking.seatNumbers || []).join(', ') }}
+                </ng-container>
+                <ng-template #oneSeat>{{ booking.seatNumber }}</ng-template>
+              </span>
+              <span class="price" *ngIf="booking.totalPrice">Total: {{ booking.totalPrice | currency:'RWF':'code':'1.0-0' }}</span>
+            </div>
+            <div class="booking-date" *ngIf="booking.bookingDate">
+              {{ formatDate(booking.bookingDate) }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Non-admin: Recent Bookings Section -->
+    <div class="section" *ngIf="!isAdminRole">
+      <div class="section-header">
+        <h2>📋 Recent Bookings</h2>
+        <button class="view-all-btn" (click)="viewAllBookings()">View All</button>
+      </div>
+
+      <div *ngIf="recentBookings.length === 0" class="no-bookings">
+        <p>No recent bookings. Start by booking a trip!</p>
+      </div>
+
+      <div *ngIf="recentBookings.length > 0" class="bookings-list">
+        <div *ngFor="let booking of recentBookings" class="booking-item">
+          <div class="booking-info">
+            <div class="booking-route" *ngIf="booking.trip">
+              {{ booking.trip.origin }} → {{ booking.trip.destination }}
+            </div>
+            <div class="booking-meta">
+              <span class="seat">Seat: {{ booking.seatNumber }}</span>
+              <span [class]="'status ' + getStatusClass(booking.status)">
+                {{ booking.status }}
+              </span>
+            </div>
+            <div class="booking-date" *ngIf="booking.bookingDate">
+              {{ formatDate(booking.bookingDate) }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="section">
+      <div class="section-header">
+        <h2>⚡ Quick Actions</h2>
+      </div>
+      
+      <div class="quick-actions">
+        <button class="action-btn" (click)="viewAllBookings()">
+          <span class="action-icon">📋</span>
+          <span>My Bookings</span>
+        </button>
+        <button class="action-btn" (click)="loadTrips()">
+          <span class="action-icon">🔄</span>
+          <span>Refresh Trips</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

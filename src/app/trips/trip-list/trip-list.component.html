@@ -1,0 +1,61 @@
+<div class="trip-list-container">
+  <div class="header">
+    <button class="back-button" (click)="goBack()">← Back</button>
+    <h2>📅 Available Trips</h2>
+  </div>
+
+  <div class="search-bar">
+    <input type="text" placeholder="Search origin" [(ngModel)]="searchOrigin" />
+    <input type="text" placeholder="Search destination" [(ngModel)]="searchDestination" />
+    <input type="date" placeholder="Departure date" [(ngModel)]="searchDepartureDate" />
+    <button (click)="onSearch()">Search</button>
+  </div>
+
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <div *ngIf="filteredTrips.length === 0 && !error" class="no-trips">
+    <p *ngIf="!searchOrigin && !searchDestination && !searchDepartureDate">No trips available at the moment. Please check back later!</p>
+    <p *ngIf="searchOrigin || searchDestination || searchDepartureDate">No trips match your search.</p>
+  </div>
+
+  <div *ngFor="let trip of filteredTrips" class="trip-card">
+    <div class="trip-header">
+      <div class="route">
+        <span class="origin">{{ trip.origin }}</span>
+        <span class="arrow">→</span>
+        <span class="destination">{{ trip.destination }}</span>
+      </div>
+      <div class="price">{{ trip.price | currency:'RWF':'code' }}</div>
+    </div>
+
+    <div class="trip-details">
+      <div class="detail-item">
+        <span class="icon">🕒</span>
+        <span>Departure: {{ trip.departureTime | date:'medium' }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="icon">⏰</span>
+        <span>Arrival: {{ trip.arrivalTime | date:'medium' }}</span>
+      </div>
+      <div class="detail-item">
+        <span class="icon">💺</span>
+        <span>Seats: {{ trip.availableSeats !== undefined ? trip.availableSeats : 'N/A' }} / {{ trip.totalSeats }}</span>
+      </div>
+      <div class="detail-item" *ngIf="trip.status">
+        <span class="icon">📊</span>
+        <span>Status: {{ trip.status }}</span>
+      </div>
+    </div>
+
+    <div class="trip-actions">
+      <button 
+        class="book-btn"
+        (click)="bookTrip(trip.tripId || trip.id!)"
+        [disabled]="trip.status === 'CANCELLED' || trip.availableSeats === 0"
+      >
+        {{ trip.status === 'CANCELLED' ? 'Trip Cancelled' : 
+           trip.availableSeats === 0 ? 'No Seats' : 'Book Now' }}
+      </button>
+    </div>
+  </div>
+</div>

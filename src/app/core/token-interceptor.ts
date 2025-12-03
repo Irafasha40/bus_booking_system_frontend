@@ -1,12 +1,13 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
 
 export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
 	const authService = inject(AuthService);
 	const token = authService.getToken();
 	const isLoggedIn = authService.isLoggedIn();
-	const isApiRequest = req.url.startsWith('http://localhost:8080');
+	const isApiRequest = req.url.startsWith(environment.apiUrl);
 	
 	// Skip adding Authorization header for authentication endpoints
 	const isAuthEndpoint = req.url.includes('/api/auth/signin') || 

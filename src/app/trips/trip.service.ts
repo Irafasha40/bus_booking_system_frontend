@@ -3,10 +3,11 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { TripDTO } from '../core/models';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class TripService {
-  private apiUrl = 'http://localhost:8080/api/trips';
+  private apiUrl = `${environment.apiUrl}/api/trips`;
 
   constructor(private http: HttpClient) {}
 

@@ -3,10 +3,11 @@ import { Injectable } from '@angular/core';
 import {BehaviorSubject, Observable} from 'rxjs';
 import {AuthResponse, LoginDTO, RegisterDTO, ResetDTO, UserDTO} from './models';
 import { jwtDecode } from 'jwt-decode';
+import { environment } from '../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private apiUrl = 'http://localhost:8080/api/auth'; // Adjust if needed
+  private apiUrl = `${environment.apiUrl}/api/auth`;
   private currentUser = new BehaviorSubject<AuthResponse | null>(null);
   public user$ = this.currentUser.asObservable();
 
